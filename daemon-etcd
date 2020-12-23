@@ -1,0 +1,123 @@
+#!/bin/sh 
+
+#Author of script  Smetankin Denis Nikolaevich. I am from Russia Moscow, district Kapotny
+#You must to copy with script to directory /etc/rc.d/
+#
+#Create file  pid for " deamon etcd" you must to use command below.
+
+#touch /var/run/etcd.pid
+#
+#Create directory "daemon-etcd" for configure daemon etcd. You must to use command to below.
+#mkdir /usr/local/etc/daemon-etcd
+#Create file "daemon-etcd.conf" in directory for tunning daemon etcd .
+# touch /usr/local/etc/daemon-etcd/daemon-etcd.conf
+#
+#My tunning of file "daemon-etcd.conf"  below.  
+#
+#name: 'claster-daemon'
+#initial-cluster-state: 'new' 
+#listen-peer-urls: http://localhost:2380 
+#listen-client-urls: http://localhost:2379,http://192.168.1.91:2379 
+#initial-cluster: default=http://localhost:2380 
+#advertise-client-urls: http://192.168.1.91:2379 
+#initial-advertise-peer-urls: http://192.168.1.91:2380 
+#logger: zap
+#enable-v2: true
+#
+#
+#
+#
+#
+#You must to add in file /etc/rc.conf for starting etcd daemon below.
+#etcd_enable="YES"
+#
+#touch /var/log/daemon-etcd.log 
+# chown daemon-etcd:daemon-etcd  /var/log/daemon-etcd.log
+#
+
+. /etc/rc.subr
+command=/usr/local/etc/daemon-etcd/daemon-etcd.script.sh
+name=etcd
+rcvar="etcd_enable"
+
+start_cmd="${name}_start"
+status_cmd="${name}_status"
+stop_cmd="${name}_stop"
+
+
+: ${etcd_enable:=no}
+: ${daemon_cmd:="/usr/sbin/daemon"}
+: ${kill_cmd:="/bin/kill"}
+: ${cat_cmd:="/bin/cat"}
+: ${etcd_pid:="/var/run/etcd.pid"}
+: ${etcd_user:="root"}
+: ${etcd_cmd:="/usr/local/bin/etcd"}
+: ${etcd_config:="/usr/local/etc/daemon-etcd/daemon-etcd.conf"}
+etcd_status()
+{
+if [ -e ${etcd_pid} ]
+then
+echo -e "\e[0m"
+echo -e "\e[32m+++++++++STATUS DAEMON IS RUNNIG+++++++++"
+echo -e "\e[32m|Running.....|PID ETCD DAEMON IS = `$cat_cmd ${etcd_pid}`|"
+echo -e "+++++++++++++++++++++++++++++++++++++++++"
+echo -e "\e[0m"
+else 
+echo -e "\e[0m"
+echo -e "\e[31m++++++++++++STATUS ETCD DAEMON IS NOT  RUNNIG ++++++++++++++++++++"
+echo -e "\e[0m"
+fi
+
+}
+
+etcd_stop()
+{
+if [ -e ${etcd_pid} ]
+then
+	${kill_cmd} `${cat_cmd} ${etcd_pid}`
+        sleep 3
+echo -e "\e[0m"
+echo -e "\e[31m+++THE DAEMON ETCD WAS STOPED+++"
+echo -e "\e[31m|.........Stoping..............|"
+echo -e "\e[31m++++++++++++++++++++++++++++++++"
+echo -e "\e[0m"
+else
+
+echo -e "\e[0m"
+echo -e  "\e[32m+++++++++++++++DAEMON ETCD  STOPED ++++++++++++++++++"
+echo -e "\e[0m"
+fi
+}
+
+etcd_kill()
+{
+	${kill_cmd} `${cat_cmd} ${etcd_pid}`
+}
+
+etcd_start(){
+
+if [ -e ${etcd_pid} ]
+then
+
+echo -e "\e[0m"
+echo -e "\e[32m++++++++++DAEMON ETCD WAS RUNNIG+++++++++"
+echo -e "\e[32m|Running.....|PID ETCD DAEMON IS = `$cat_cmd ${etcd_pid}`|"
+echo -e "+++++++++++++++++++++++++++++++++++++++++"
+echo -e "\e[0m"
+else
+
+ 	${daemon_cmd} -S -R 10  -P ${etcd_pid} -t ${name}  -u ${etcd_user}   ${etcd_cmd} --config-file ${etcd_config}  
+
+        
+echo -e "\e[0m"
+echo -e "\e[32m++++++++++++DAEMON IS  RUNNIG++++++++++++"
+echo -e "\e[32m|Running.....|PID ETCD DAEMON IS = `$cat_cmd ${etcd_pid}`|"
+echo -e "+++++++++++++++++++++++++++++++++++++++++"
+echo -e "\e[0m"
+
+fi
+}
+
+
+load_rc_config ${name}
+run_rc_command "$1"
